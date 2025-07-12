@@ -310,9 +310,9 @@ struct CreatureBaseStats
 
     // Helpers
 
-    uint32 GenerateHealth(CreatureTemplate const* info) const
+    uint32 GenerateHealth(CreatureTemplate const* info, uint32 expansion = 0) const
     {
-        return uint32(std::ceil(BaseHealth[info->expansion] * info->ModHealth));
+        return uint32(std::ceil(BaseHealth[expansion == 0 ? info->expansion : expansion] * info->ModHealth));
     }
 
     uint32 GenerateMana(CreatureTemplate const* info) const
@@ -329,9 +329,9 @@ struct CreatureBaseStats
         return std::ceil(BaseArmor * info->ModArmor);
     }
 
-    float GenerateBaseDamage(CreatureTemplate const* info) const
+    float GenerateBaseDamage(CreatureTemplate const* info, uint32 expansion = 0) const
     {
-        return BaseDamage[info->expansion];
+        return BaseDamage[expansion == 0 ? info->expansion : expansion];
     }
 
     static CreatureBaseStats const* GetBaseStats(uint8 level, uint8 unitClass);

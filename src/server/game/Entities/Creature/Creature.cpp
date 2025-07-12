@@ -3313,9 +3313,18 @@ float Creature::GetAggroRange(Unit const* target) const
 
     // Minimum Aggro Radius for a mob seems to be combat range (5 yards)
     // hunter pets seem to ignore minimum aggro radius so we'll default it a little higher
-    float minRange = IsPet() ? 10.0f : 5.0f;
-    if (aggroRadius < minRange)
-        aggroRadius = minRange;
+    if (sWorld->getBoolConfig(CONFIG_MOD_UPDATELEVEL_ENABLE)) {
+        float minRange = IsPet() ? 10.0f : 20.0f;
+        if (aggroRadius < minRange)
+            aggroRadius = minRange;
+        if (IsGuardian()) aggroRadius = 1;
+    }
+    else {
+        float minRange = IsPet() ? 10.0f : 5.0f;
+        if (aggroRadius < minRange)
+            aggroRadius = minRange;
+    }
+        
 
     return (aggroRadius * aggroRate);
 }

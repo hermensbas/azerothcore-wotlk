@@ -2019,7 +2019,10 @@ bool WorldObject::CanDetectStealthOf(WorldObject const* obj, bool checkAlert) co
         // Level difference: 5 point / level, starting from level 1.
         // There may be spells for this and the starting points too, but
         // not in the DBCs of the client.
-        detectionValue += int32(getLevelForTarget(obj) - 1) * 5;
+        if (sWorld->getBoolConfig(CONFIG_MOD_UPDATELEVEL_ENABLE))
+            detectionValue += int32(obj->getLevelForTarget(obj) - 1) * 5;  
+        else
+            detectionValue += int32(getLevelForTarget(obj) - 1) * 5;
 
         // Apply modifiers
         detectionValue += m_stealthDetect.GetValue(StealthType(i));

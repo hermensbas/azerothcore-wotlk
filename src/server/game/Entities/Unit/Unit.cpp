@@ -823,6 +823,9 @@ void Unit::DealDamageMods(Unit const* victim, uint32& damage, uint32* absorb)
 
 uint32 Unit::DealDamage(Unit* attacker, Unit* victim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellInfo const* spellProto, bool durabilityLoss, bool /*allowGM*/, Spell const* damageSpell /*= nullptr*/)
 {
+	if (attacker && (attacker->GetTypeId() == TYPEID_PLAYER || attacker->GetTypeId() == TYPEID_UNIT) && victim->GetTypeId() == TYPEID_UNIT)
+	victim->UpdateLevelByTarget(attacker);
+
     damage = sScriptMgr->DealDamage(attacker, victim, damage, damagetype);
     // Xinef: initialize damage done for rage calculations
     // Xinef: its rare to modify damage in hooks, however training dummy's sets damage to 0
@@ -1068,6 +1071,7 @@ uint32 Unit::DealDamage(Unit* attacker, Unit* victim, uint32 damage, CleanDamage
         //if (attacker && victim->IsPlayer() && victim != attacker)
         //victim->ToPlayer()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_TOTAL_DAMAGE_RECEIVED, health); // pussywizard: optimization
         Unit::Kill(attacker, victim, durabilityLoss, cleanDamage ? cleanDamage->attackType : BASE_ATTACK, spellProto, damageSpell);
+        if (!(victim->GetMap()->IsDungeon() || victim->GetMap()->IsRaid())) victim->UpdateLevelByTarget(NULL);
     }
     else
     {
@@ -10505,6 +10509,7 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
     // remove SPELL_AURA_MOD_UNATTACKABLE at attack (in case non-interruptible spells stun aura applied also that not let attack)
     if (HasUnattackableAura())
         RemoveAurasByType(SPELL_AURA_MOD_UNATTACKABLE);
+    if (!(GetMap()->IsDungeon() || GetMap()->IsRaid())) UpdateLevelByTarget(victim);
 
     if (m_attacking)
     {
@@ -10640,6 +10645,120 @@ bool Unit::AttackStop()
     SendMeleeAttackStop(victim);
 
     return true;
+}
+
+void Unit::UpdateAllStats(Unit* enemy, uint8 level)
+{
+    CreatureTemplate const* cInfo = ToCreature()->GetCreatureTemplate();
+
+    uint32 rank = IsPet() ? 0 : cInfo->rank;
+
+    // level
+    SetLevel(level);
+
+    uint32 expansion = 0;
+    if (level >= 58)
+        expansion = 1;
+    if (level >= 68)
+        expansion = 2;
+
+    CreatureBaseStats const* stats = sObjectMgr->GetCreatureBaseStats(level, cInfo->unit_class);
+
+    // health
+    float healthmod = 1;
+    switch (rank) // define rates for each elite rank
+    {
+    case CREATURE_ELITE_NORMAL:
+        healthmod = sWorld->getRate(RATE_CREATURE_NORMAL_HP);
+        break;
+    case CREATURE_ELITE_ELITE:
+        healthmod = sWorld->getRate(RATE_CREATURE_ELITE_ELITE_HP);
+        break;
+    case CREATURE_ELITE_RAREELITE:
+        healthmod = sWorld->getRate(RATE_CREATURE_ELITE_RAREELITE_HP);
+        break;
+    case CREATURE_ELITE_WORLDBOSS:
+        healthmod = sWorld->getRate(RATE_CREATURE_ELITE_WORLDBOSS_HP);
+        break;
+    case CREATURE_ELITE_RARE:
+        healthmod = sWorld->getRate(RATE_CREATURE_ELITE_RARE_HP);
+        break;
+    default:
+        healthmod = sWorld->getRate(RATE_CREATURE_ELITE_ELITE_HP);
+        break;
+    }
+
+    uint32 stats_modify = 1;
+    //	if ((enemy && !this->ToCreature()->isElite() && (enemy->GetTypeId() == TYPEID_PLAYER
+    //		 && enemy->ToPlayer()->GetAverageItemLevel() >= 226)))
+    //		 stats_modify = 3;
+
+    uint32 basehp = stats->GenerateHealth(cInfo, expansion);
+    // Updating the number of health and increase it if the equipment level above 226
+    uint32 health   = uint32(basehp * healthmod) * stats_modify;
+    uint32 curentHP = GetMaxHealth() - GetHealth();
+
+    SetCreateHealth(health);
+    SetMaxHealth(health);
+    if (IsAlive() && !isDead())
+        SetHealth(health - (IsInCombat() ? curentHP : 0));
+    //ToCreature()->ResetPlayerDamageReq();
+
+    // mana
+    uint32 mana = stats->GenerateMana(cInfo);
+
+    SetCreateMana(mana);
+   SetMaxPower(POWER_MANA, mana); // MAX Mana
+    SetPower(POWER_MANA, mana);
+
+    SetStatFlatModifier(UNIT_MOD_HEALTH, BASE_VALUE, (float) health);
+    SetStatFlatModifier(UNIT_MOD_MANA, BASE_VALUE, (float) mana);
+
+    // damage
+
+    float basedamage = stats->GenerateBaseDamage(cInfo, expansion);
+
+    float weaponBaseMinDamage = basedamage * stats_modify;
+    float weaponBaseMaxDamage = basedamage * 1.5f * stats_modify;
+
+    SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, weaponBaseMinDamage);
+    SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, weaponBaseMaxDamage);
+
+    SetBaseWeaponDamage(OFF_ATTACK, MINDAMAGE, weaponBaseMinDamage);
+    SetBaseWeaponDamage(OFF_ATTACK, MAXDAMAGE, weaponBaseMaxDamage);
+
+    SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE, weaponBaseMinDamage);
+    SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE, weaponBaseMaxDamage);
+
+    SetStatFlatModifier(UNIT_MOD_ATTACK_POWER, BASE_VALUE, stats->AttackPower);
+    SetStatFlatModifier(UNIT_MOD_ATTACK_POWER_RANGED, BASE_VALUE, stats->RangedAttackPower);
+
+    float armor = (float) stats->GenerateArmor(cInfo);
+    SetStatFlatModifier(UNIT_MOD_ARMOR, BASE_VALUE, armor);
+
+    SetCanModifyStats(true);
+    ToCreature()->UpdateAllStats();
+}
+
+void Unit::UpdateLevelByTarget(Unit* target)
+{
+    if (sWorld->getBoolConfig(CONFIG_MOD_UPDATELEVEL_ENABLE))
+    {
+
+        if (GetTypeId() != TYPEID_UNIT || ToCreature()->IsCritter() || IsPet() || IsGuardian() || IsTotem())
+            return;
+
+        if ((!IsAlive() && isDead()) || (!target && IsAlive() && !IsPet() && !IsGuardian() && !IsTotem()))
+        {
+            if (CreatureTemplate const* cinfo = ToCreature()->GetCreatureTemplate())
+                UpdateAllStats(target, cinfo->maxlevel);
+        }
+        else
+        {
+            if (target && (target->GetTypeId() == TYPEID_PLAYER || target->IsPet() || target->IsGuardian()) && IsAlive() && !isDead() && (GetLevel() + sWorld->getIntConfig(CONFIG_MOD_UPDATELEVEL_LEVEL)) < (target)->GetLevel())
+                UpdateAllStats(target, target->GetLevel());
+        }
+    }
 }
 
 void Unit::CombatStop(bool includingCast)
@@ -13973,6 +14092,9 @@ void Unit::ClearInCombat()
 {
     m_CombatTimer = 0;
     RemoveUnitFlag(UNIT_FLAG_IN_COMBAT);
+
+    if (!(GetMap()->IsDungeon() || GetMap()->IsRaid()))
+        UpdateLevelByTarget(NULL);
 
     // Player's state will be cleared in Player::UpdateContestedPvP
     if (Creature* creature = ToCreature())

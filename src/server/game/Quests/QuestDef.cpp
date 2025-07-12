@@ -197,7 +197,18 @@ void Quest::LoadQuestTemplateAddon(Field* fields)
 
 uint32 Quest::XPValue(uint8 playerLevel) const
 {
-    int32 quest_level = (Level == -1 ? playerLevel : Level);
+    int32 quest_level;
+    if (sWorld->getBoolConfig(CONFIG_MOD_UPDATELEVEL_ENABLE))
+        
+        if (Level != -1 && (playerLevel > (Level + 5))) {
+            quest_level = playerLevel;
+        }
+        else {
+            quest_level = (Level == -1 ? playerLevel : Level);
+        }
+    else
+        quest_level = (Level == -1 ? playerLevel : Level);
+
     const QuestXPEntry* xpentry = sQuestXPStore.LookupEntry(quest_level);
     if (!xpentry)
     {
