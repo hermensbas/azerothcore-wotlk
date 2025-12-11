@@ -100,6 +100,7 @@
 #include "WorldStateDefines.h"
 #include <boost/asio/ip/address.hpp>
 #include <cmath>
+#include "Item.h"
 
 std::atomic_long World::_stopEvent = false;
 uint8 World::_exitCode = SHUTDOWN_EXIT_CODE;
@@ -867,6 +868,12 @@ void World::SetInitialWorldSettings()
 
     LOG_INFO("server.loading", "Loading Calendar Data...");
     sCalendarMgr->LoadFromDB();
+	
+    if (sWorld->getBoolConfig(CONFIG_MOD_RANDOM_ITEMSTATS_ENABLE))
+    {
+        //sLog->outString("Loading Random Item Stats...");
+        sObjectMgr->LoadRandomItemStats();
+    }
 
     LOG_INFO("server.loading", "Initializing SpellInfo Precomputed Data..."); // must be called after loading items, professions, spells and pretty much anything
     LOG_INFO("server.loading", " ");

@@ -519,6 +519,37 @@ void ObjectMgr::LoadPointOfInterestLocales()
     LOG_INFO("server.loading", ">> Loaded {} Points Of Interest Locale Strings in {} ms", (uint32)_pointOfInterestLocaleStore.size(), GetMSTimeDiffToNow(oldMSTime));
 }
 
+void ObjectMgr::LoadRandomItemStats()
+{
+    uint32 oldMSTime = getMSTime();
+    //                                                0      1           2
+    QueryResult result = WorldDatabase.Query("SELECT id, stat_count, stat_amount FROM random_item_stats;");
+    if (!result)
+    {
+        return;
+    }
+    _randomItemStatsStore.rehash(result->GetRowCount());
+    uint32 count = 0;
+    do
+    {
+        Field* fields = result->Fetch();
+        LoadRandomItemStats(fields, count);
+        ++count;
+    } while (result->NextRow());
+
+}
+
+void ObjectMgr::LoadRandomItemStats(Field* fields, uint32 count)
+{
+    uint32 entry = fields[0].Get<uint32>();
+
+    RandomItemStats& randomItemStats = _randomItemStatsStore[count];
+
+    randomItemStats.ID = entry;
+    randomItemStats.Count = fields[1].Get<uint32>();
+    randomItemStats.Amount = fields[2].Get<uint32>();
+}
+
 void ObjectMgr::LoadCreatureTemplates()
 {
     uint32 oldMSTime = getMSTime();

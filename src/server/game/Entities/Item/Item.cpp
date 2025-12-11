@@ -1102,8 +1102,56 @@ Item* Item::CreateItem(uint32 item, uint32 count, Player const* player, bool clo
         if (pItem->Create(guid, item, player))
         {
             pItem->SetCount(count);
-            if (!clone)
-                pItem->SetItemRandomProperties(randomPropertyId ? randomPropertyId : Item::GenerateItemRandomPropertyId(item));
+            if (!clone) {
+                //pItem->SetItemRandomProperties(randomPropertyId ? randomPropertyId : Item::GenerateItemRandomPropertyId(item));
+                if (randomPropertyId) pItem->SetItemRandomProperties(randomPropertyId);
+                else
+                {
+                    pItem->SetItemRandomProperties(Item::GenerateItemRandomPropertyId(item));
+
+                    if (sWorld->getBoolConfig(CONFIG_MOD_RANDOM_ITEMSTATS_ENABLE))
+                    {
+                        ItemTemplate const* itemTemplate = pItem->GetTemplate();
+                        if (itemTemplate->Class == ITEM_CLASS_WEAPON || itemTemplate->Class == ITEM_CLASS_ARMOR)
+                        if (itemTemplate->Quality == ITEM_QUALITY_UNCOMMON || itemTemplate->Quality == ITEM_QUALITY_RARE || itemTemplate->Quality == ITEM_QUALITY_EPIC)
+                        if (itemTemplate->InventoryType == INVTYPE_HEAD || itemTemplate->InventoryType == INVTYPE_NECK || itemTemplate->InventoryType == INVTYPE_SHOULDERS || itemTemplate->InventoryType == INVTYPE_CHEST || itemTemplate->InventoryType == INVTYPE_ROBE || itemTemplate->InventoryType == INVTYPE_BODY || itemTemplate->InventoryType == INVTYPE_WAIST || itemTemplate->InventoryType == INVTYPE_LEGS ||
+                            itemTemplate->InventoryType == INVTYPE_FEET || itemTemplate->InventoryType == INVTYPE_WRISTS || itemTemplate->InventoryType == INVTYPE_HANDS || itemTemplate->InventoryType == INVTYPE_FINGER || itemTemplate->InventoryType == INVTYPE_WEAPON || itemTemplate->InventoryType == INVTYPE_SHIELD || itemTemplate->InventoryType == INVTYPE_RANGED ||
+                            itemTemplate->InventoryType == INVTYPE_CLOAK || itemTemplate->InventoryType == INVTYPE_2HWEAPON || itemTemplate->InventoryType == INVTYPE_WEAPONMAINHAND || itemTemplate->InventoryType == INVTYPE_WEAPONOFFHAND || itemTemplate->InventoryType == INVTYPE_RELIC || itemTemplate->InventoryType == INVTYPE_RANGEDRIGHT || itemTemplate->InventoryType == INVTYPE_THROWN)
+                        {
+                            std::map<uint32, uint32> propertiesList;
+                            propertiesList.clear();
+                            uint32 count = 0;
+                            uint32 level = uint32(itemTemplate->ItemLevel / sWorld->getIntConfig(CONFIG_MOD_RANDOM_ITEMSTATS_RATE));
+                            if (itemTemplate->ItemLevel >= sWorld->getIntConfig(CONFIG_MOD_RANDOM_ITEMSTATS_ITEMLEVELUP))
+                                level = uint32(level + ((itemTemplate->ItemLevel - sWorld->getIntConfig(CONFIG_MOD_RANDOM_ITEMSTATS_ITEMLEVELUP)) / 2));
+                            if (level)
+                            {
+                                RandomItemStatsContainer const* riss = sObjectMgr->GetRandomItemStats();
+                                if (itemTemplate->ItemLevel < sWorld->getIntConfig(CONFIG_MOD_RANDOM_ITEMSTATS_ITEMLEVEL))
+                                {
+                                    for (RandomItemStatsContainer::const_iterator itr = riss->begin(); itr != riss->end(); ++itr)
+                                    {
+                                        if (itr->second.Amount <= level)
+                                        {
+                                            propertiesList[count] = itr->second.ID;
+                                            ++count;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    for (RandomItemStatsContainer::const_iterator itr = riss->begin(); itr != riss->end(); ++itr)
+                                    {
+                                        propertiesList[count] = itr->second.ID;
+                                        ++count;
+                                    }
+                                }
+                            }
+                            pItem->SetItemRandomProperties(propertiesList[urand(0, count)]);
+                        }
+                    }
+                }
+            }
             else if (randomPropertyId)
                 pItem->SetItemRandomProperties(randomPropertyId);
             return pItem;

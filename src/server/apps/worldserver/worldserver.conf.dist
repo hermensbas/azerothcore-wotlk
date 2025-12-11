@@ -824,6 +824,37 @@ Log.Async.Enable = 0
 ###################################################################################################
 
 ###################################################################################################
+#    Random Item Stats config
+###################################################################################################
+#
+#    SETTINGS
+#
+#    Random.ItemStats.Enable
+#        Description: Enables / Disables mod
+#        Default:    1
+#
+#    Random.ItemStats.Rate
+#        Description: The number of levels, for which the object gives one state
+#        Default:    10
+#
+#    Random.ItemStats.ItemLevel
+#        Description: Item level, after which all articles are randomly
+#        Default:    250
+#
+#    Random.ItemStats.ItemLevelUp
+#        Description: Item level, followed by a sharp increase in performance
+#        Default:    200
+#
+
+Random.ItemStats.Enable = 1
+Random.ItemStats.Rate = 10
+Random.ItemStats.ItemLevel = 250
+Random.ItemStats.ItemLevelUp = 200
+
+#
+###################################################################################################
+
+###################################################################################################
 # METRIC
 #
 # These settings control the statistics sent to the metric database (currently InfluxDB)

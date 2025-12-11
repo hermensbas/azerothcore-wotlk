@@ -41,6 +41,15 @@ enum InventorySlot
     NULL_SLOT   = 255
 };
 
+struct RandomItemStats            // random_item_stats
+ {
+    uint32 ID;                    // id
+    uint32 Count;                // stat_count
+    uint32 Amount;                // stat_amount
+    };
+
+typedef std::unordered_map<uint32, RandomItemStats> RandomItemStatsContainer;
+
 // EnumUtils: DESCRIBE THIS
 enum InventoryResult : uint8
 {

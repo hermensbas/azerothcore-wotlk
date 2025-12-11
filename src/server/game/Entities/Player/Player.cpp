@@ -10782,7 +10782,7 @@ inline bool Player::_StoreOrEquipNewItem(uint32 vendorslot, uint32 item, uint8 c
         if (!bStore)
             AutoUnequipOffhandIfNeed();
 
-        if (pProto->HasFlag(ITEM_FLAG_ITEM_PURCHASE_RECORD) && crItem->ExtendedCost && pProto->GetMaxStackSize() == 1)
+        /*if (pProto->HasFlag(ITEM_FLAG_ITEM_PURCHASE_RECORD) && crItem->ExtendedCost && pProto->GetMaxStackSize() == 1)
         {
             it->SetFlag(ITEM_FIELD_FLAGS, ITEM_FIELD_FLAG_REFUNDABLE);
             it->SetRefundRecipient(GetGUID().GetCounter());
@@ -10790,7 +10790,7 @@ inline bool Player::_StoreOrEquipNewItem(uint32 vendorslot, uint32 item, uint8 c
             it->SetPaidExtendedCost(crItem->ExtendedCost);
             it->SaveRefundDataToDB();
             AddRefundReference(it->GetGUID());
-        }
+        }*/
     }
 
     sScriptMgr->OnPlayerAfterStoreOrEquipNewItem(this, vendorslot, it, count, bag, slot, pProto, pVendor, crItem, bStore);

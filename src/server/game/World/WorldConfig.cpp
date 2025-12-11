@@ -595,6 +595,12 @@ void WorldConfig::BuildConfigCache()
 
     SetConfigValue<bool>(CONFIG_IP_BASED_ACTION_LOGGING, "Allow.IP.Based.Action.Logging", false);
 	
+    // Mod Random Items Stats
+    SetConfigValue<bool>(CONFIG_MOD_RANDOM_ITEMSTATS_ENABLE, "Random.ItemStats.Enable", true);
+    SetConfigValue<uint32>(CONFIG_MOD_RANDOM_ITEMSTATS_RATE, "Random.ItemStats.Rate", 10);
+    SetConfigValue<uint32>(CONFIG_MOD_RANDOM_ITEMSTATS_ITEMLEVEL, "Random.ItemStats.ItemLevel", 250);
+    SetConfigValue<uint32>(CONFIG_MOD_RANDOM_ITEMSTATS_ITEMLEVELUP, "Random.ItemStats.ItemLevelUp", 200);
+	
     // Mod LevelByTarget
     SetConfigValue<bool>(CONFIG_MOD_UPDATELEVEL_ENABLE, "UpdateLevel.ByTarget.Enable", true);
     SetConfigValue<uint32>(CONFIG_MOD_UPDATELEVEL_LEVEL, "UpdateLevel.ByTarget.Level", 4);
