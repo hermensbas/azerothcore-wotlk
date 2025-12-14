@@ -1168,6 +1168,11 @@ public:                                                 // opcodes handlers
         return _isBot;
     }
 
+#ifdef MOD_PLAYERBOTS
+    void SetHasPlayerbotMgr(bool v) { _hasPlayerbotMgr = v; }
+    [[nodiscard]] bool HasPlayerbotMgr() const { return _hasPlayerbotMgr; }
+#endif
+
 private:
     void ProcessQueryCallbacks();
 
@@ -1279,7 +1284,9 @@ private:
     uint32 _timeSyncTimer;
 
     uint32 _orderCounter;
-
+#ifdef MOD_PLAYERBOTS
+    bool _hasPlayerbotMgr;
+#endif
     bool _isBot;
 
     WorldSession(WorldSession const& right) = delete;
