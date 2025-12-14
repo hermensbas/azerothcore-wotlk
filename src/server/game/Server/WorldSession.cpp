@@ -138,6 +138,9 @@ WorldSession::WorldSession(uint32 id, std::string&& name, uint32 accountFlags, s
     _timeSyncClockDelta(0),
     _pendingTimeSyncRequests(),
     _orderCounter(0),
+#ifdef MOD_PLAYERBOTS
+     _hasPlayerbotMgr(false),
+#endif
     _isBot(isBot)
 {
     memset(m_Tutorials, 0, sizeof(m_Tutorials));
@@ -262,7 +265,10 @@ void WorldSession::SendPacket(WorldPacket const* packet)
         return;
     }
 
-    sScriptMgr->OnPlayerbotPacketSent(GetPlayer(), packet);
+#ifdef MOD_PLAYERBOTS
+    if (_isBot || _hasPlayerbotMgr)
+        sScriptMgr->OnPlayerbotPacketSent(GetPlayer(), packet);
+#endif
 
     if (!m_Socket)
         return;
