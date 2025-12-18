@@ -16093,6 +16093,11 @@ void Unit::CleanupBeforeRemoveFromMap(bool finalCleanup)
     if (IsInWorld()) // not in world and not being removed atm
         RemoveFromWorld();
 
+    // Cancel and remove pending events (including SpellEvent) before aura/spellmod cleanup.
+    // Without this, SpellEvent may be cancelled later during EventProcessor destruction after auras/spellmods are gone,
+    // leading to invalid access in Player::RestoreSpellMods on logout.
+    m_Events.KillAllEvents(false);
+
     ASSERT(GetGUID());
 
     // A unit may be in removelist and not in world, but it is still in grid
