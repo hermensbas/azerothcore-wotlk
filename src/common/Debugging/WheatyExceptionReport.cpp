@@ -174,7 +174,7 @@ LONG WINAPI WheatyExceptionReport::WheatyUnhandledExceptionFilter(
                                FILE_FLAG_WRITE_THROUGH,
                                0);
 
-    if (m_hDumpFile)
+    if (m_hDumpFile != INVALID_HANDLE_VALUE)
     {
         MINIDUMP_EXCEPTION_INFORMATION info;
         info.ClientPointers = FALSE;
@@ -196,15 +196,18 @@ LONG WINAPI WheatyExceptionReport::WheatyUnhandledExceptionFilter(
 
         MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),
                           m_hDumpFile, MiniDumpWithIndirectlyReferencedMemory, &info, &additionalStreamInfo, 0);
+        FlushFileBuffers(m_hDumpFile);
 
         CloseHandle(m_hDumpFile);
+        m_hDumpFile = 0;
     }
 
-    if (m_hReportFile)
+    if (m_hReportFile != INVALID_HANDLE_VALUE)
     {
         SetFilePointer(m_hReportFile, 0, 0, FILE_END);
 
         GenerateExceptionReport(pExceptionInfo);
+        FlushFileBuffers(m_hReportFile);
 
         CloseHandle(m_hReportFile);
         m_hReportFile = 0;
