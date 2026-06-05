@@ -64,6 +64,9 @@ class PlayerMenu;
 class PlayerSocial;
 class SpellCastTargets;
 class UpdateMask;
+// mod-cmangosbots: bots own their AI/manager on the Player (forward-declared; defined in the module).
+class PlayerbotAI;
+class PlayerbotMgr;
 
 typedef std::deque<Mail*> PlayerMails;
 typedef void(*bgZoneRef)(Battleground*, WorldPackets::WorldState::InitWorldStates&);
@@ -2023,6 +2026,14 @@ public:
     [[nodiscard]] WorldSession* GetSession() const { return m_session; }
     void SetSession(WorldSession* sess) { m_session = sess; }
 
+    // mod-cmangosbots: a socket-less bot owns its AI/manager here so it rides the core Player
+    // lifecycle (created on login, ticked via OnPlayerUpdate, freed by ~Player). Owned through a
+    // module-supplied deleter so the core only needs the forward declarations above.
+    [[nodiscard]] PlayerbotAI* GetPlayerbotAI() const { return m_playerbotAI.get(); }
+    void SetPlayerbotAI(PlayerbotAI* ai, void(*deleter)(PlayerbotAI*)) { m_playerbotAI = { ai, deleter }; }
+    [[nodiscard]] PlayerbotMgr* GetPlayerbotMgr() const { return m_playerbotMgr.get(); }
+    void SetPlayerbotMgr(PlayerbotMgr* mgr, void(*deleter)(PlayerbotMgr*)) { m_playerbotMgr = { mgr, deleter }; }
+
     void BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) override;
     void DestroyForPlayer(Player* target, bool onDeath = false) const override;
     void SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool recruitAFriend = false, float group_rate = 1.0f);
@@ -2896,6 +2907,11 @@ protected:
     uint32 m_resurrectHealth, m_resurrectMana;
 
     WorldSession* m_session;
+
+    // mod-cmangosbots: owned with a module-supplied deleter (types are forward-declared; ~Player frees
+    // them by calling the deleter, so the core never needs the complete types).
+    std::unique_ptr<PlayerbotAI,  void(*)(PlayerbotAI*)>  m_playerbotAI{ nullptr, nullptr };
+    std::unique_ptr<PlayerbotMgr, void(*)(PlayerbotMgr*)> m_playerbotMgr{ nullptr, nullptr };
 
     typedef std::list<Channel*> JoinedChannelsList;
     JoinedChannelsList m_channels;

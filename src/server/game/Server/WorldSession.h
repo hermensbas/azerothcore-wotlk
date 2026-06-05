@@ -383,7 +383,8 @@ struct PacketCounter
 class WorldSession
 {
 public:
-    WorldSession(uint32 id, std::string&& name, uint32 accountFlags, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool skipQueue, uint32 TotalTime);
+    // mod-cmangosbots: trailing 'bool isBot' added for socket-less bot sessions.
+    WorldSession(uint32 id, std::string&& name, uint32 accountFlags, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool skipQueue, uint32 TotalTime, bool isBot = false);
     ~WorldSession();
 
     uint32 GetAccountFlags() const { return _accountFlags; }
@@ -461,6 +462,8 @@ public:
     ObjectGuid::LowType GetGuidLow() const;
     void SetSecurity(AccountTypes security) { _security = security; }
     std::string const& GetRemoteAddress() { return m_Address; }
+    // mod-cmangosbots: true for socket-less bot sessions (see modules/mod-cmangosbots/core-patches/README.md).
+    [[nodiscard]] bool IsBot() const { return _isBot; }
     void SetPlayer(Player* player);
     uint8 Expansion() const { return m_expansion; }
 
@@ -500,6 +503,8 @@ public:
     bool DisallowHyperlinksAndMaybeKick(std::string_view str);
 
     void QueuePacket(WorldPacket* new_packet);
+    // mod-cmangosbots: lets the module pump packets for bot sessions (which aren't in World::m_sessions).
+    LockedQueue<WorldPacket*>& GetPacketQueue() { return _recvQueue; }
     bool Update(uint32 diff, PacketFilter& updater);
 
     /// Handle the authentication waiting queue (to be completed)
@@ -1230,6 +1235,7 @@ private:
     Player* _player;
     std::shared_ptr<WorldSocket> m_Socket;
     std::string m_Address;
+    bool _isBot;                                        // mod-cmangosbots: socket-less bot session
 
     AccountTypes _security;
     bool _skipQueue;

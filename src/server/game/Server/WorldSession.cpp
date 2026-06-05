@@ -106,13 +106,14 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 
 /// WorldSession constructor
 WorldSession::WorldSession(uint32 id, std::string&& name, uint32 accountFlags, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion,
-    time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool skipQueue, uint32 TotalTime) :
+    time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool skipQueue, uint32 TotalTime, bool isBot) : // mod-cmangosbots: trailing 'isBot' param
     m_muteTime(mute_time),
     m_timeOutTime(0),
     AntiDOS(this),
     m_GUIDLow(0),
     _player(nullptr),
     m_Socket(sock),
+    _isBot(isBot),                                      // mod-cmangosbots
     _security(sec),
     _skipQueue(skipQueue),
     _accountId(id),
@@ -154,6 +155,11 @@ WorldSession::WorldSession(uint32 id, std::string&& name, uint32 accountFlags, s
         m_Address = sock->GetRemoteIpAddress().to_string();
         ResetTimeOutTime(false);
         LoginDatabase.Execute("UPDATE account SET online = 1 WHERE id = {};", GetAccountId()); // One-time query
+    }
+    else if (_isBot)
+    {
+        // mod-cmangosbots: socket-less bot session -- give it a recognisable remote address.
+        m_Address = "bot";
     }
 }
 
