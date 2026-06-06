@@ -2033,6 +2033,8 @@ public:
     void SetPlayerbotAI(PlayerbotAI* ai, void(*deleter)(PlayerbotAI*)) { m_playerbotAI = { ai, deleter }; }
     [[nodiscard]] PlayerbotMgr* GetPlayerbotMgr() const { return m_playerbotMgr.get(); }
     void SetPlayerbotMgr(PlayerbotMgr* mgr, void(*deleter)(PlayerbotMgr*)) { m_playerbotMgr = { mgr, deleter }; }
+    // mod-cmangosbots: a "real" (human) player is one with no bot AI attached.
+    [[nodiscard]] bool isRealPlayer() const { return m_playerbotAI == nullptr; }
 
     void BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) override;
     void DestroyForPlayer(Player* target, bool onDeath = false) const override;
