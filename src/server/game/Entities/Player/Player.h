@@ -2031,8 +2031,10 @@ public:
     // module-supplied deleter so the core only needs the forward declarations above.
     [[nodiscard]] PlayerbotAI* GetPlayerbotAI() const { return m_playerbotAI.get(); }
     void SetPlayerbotAI(PlayerbotAI* ai, void(*deleter)(PlayerbotAI*)) { m_playerbotAI = { ai, deleter }; }
+    void RemovePlayerbotAI() { m_playerbotAI.reset(); }
     [[nodiscard]] PlayerbotMgr* GetPlayerbotMgr() const { return m_playerbotMgr.get(); }
     void SetPlayerbotMgr(PlayerbotMgr* mgr, void(*deleter)(PlayerbotMgr*)) { m_playerbotMgr = { mgr, deleter }; }
+    void RemovePlayerbotMgr() { m_playerbotMgr.reset(); }
     // mod-cmangosbots: a "real" (human) player is one with no bot AI attached.
     [[nodiscard]] bool isRealPlayer() const { return m_playerbotAI == nullptr; }
 
