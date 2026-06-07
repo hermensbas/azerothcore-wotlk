@@ -266,6 +266,8 @@ public:
 
     void ChangeMembersGroup(ObjectGuid guid, uint8 group);
     void SetTargetIcon(uint8 id, ObjectGuid whoGuid, ObjectGuid targetGuid);
+    // mod-cmangosbots: public read access to raid target icons (mirrors cmangos Group::GetTargetIcon).
+    [[nodiscard]] ObjectGuid GetTargetIcon(uint8 index) const { return index < TARGETICONCOUNT ? m_targetIcons[index] : ObjectGuid::Empty; }
     void SetGroupMemberFlag(ObjectGuid guid, bool apply, GroupMemberFlags flag);
     void RemoveUniqueGroupMemberFlag(GroupMemberFlags flag);
 
