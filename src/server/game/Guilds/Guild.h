@@ -688,6 +688,8 @@ public:
     std::string const& GetName() const { return m_name; }
     std::string const& GetMOTD() const { return m_motd; }
     std::string const& GetInfo() const { return m_info; }
+    // mod-cmangosbots: public rank-name lookup (mirrors cmangos Guild::GetRankName; _GetRankName is private).
+    [[nodiscard]] std::string GetRankName(uint8 rankId) const { return _GetRankName(rankId); }
 
     bool SetName(std::string_view const& name);
 
