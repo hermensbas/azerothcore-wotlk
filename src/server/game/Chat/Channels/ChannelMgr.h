@@ -47,6 +47,9 @@ public:
     static void SetChannelRightsFor(const std::string& name, const uint32& flags, const uint32& speakDelay, const std::string& joinmessage, const std::string& speakmessage, const std::set<uint32>& moderators);
     static uint32 _channelIdMax;
 
+    // mod-cmangosbots: read-only access to the channel map (bots iterate channels to find zone channels).
+    [[nodiscard]] ChannelMap const& GetChannels() const { return channels; }
+
 private:
     ChannelMap channels;
     TeamId _teamId;
