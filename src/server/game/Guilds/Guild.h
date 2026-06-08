@@ -690,6 +690,8 @@ public:
     std::string const& GetInfo() const { return m_info; }
     // mod-cmangosbots: public rank-name lookup (mirrors cmangos Guild::GetRankName; _GetRankName is private).
     [[nodiscard]] std::string GetRankName(uint8 rankId) const { return _GetRankName(rankId); }
+    // mod-cmangosbots: public rank-right check (mirrors cmangos Guild::HasRankRight; _GetRankRights is private).
+    [[nodiscard]] bool HasRankRight(uint8 rankId, uint32 right) const { return (_GetRankRights(rankId) & right) != GR_RIGHT_EMPTY; }
 
     bool SetName(std::string_view const& name);
 
