@@ -2420,6 +2420,8 @@ public:
     void   SaveRecallPosition();
 
     void SetHomebind(WorldLocation const& loc, uint32 areaId);
+    // mod-cmangosbots: read homebind into out-params (mirrors cmangos Player::GetHomebindLocation).
+    void GetHomebindLocation(float& x, float& y, float& z, uint32& m) const { x = m_homebindX; y = m_homebindY; z = m_homebindZ; m = m_homebindMapId; }
 
     // Homebind coordinates
     uint32 m_homebindMapId;
