@@ -8154,6 +8154,15 @@ bool Spell::HaveTargetsForEffect(uint8 effect) const
     return false;
 }
 
+// mod-cmangosbots: mirrors the SpellEvent registration done inside Spell::prepare(), exposed so a
+// module reimplementing the prepare path can register the spell's update event (SpellEvent is local
+// to this TU).
+void Spell::ModCBRegisterSpellEvent()
+{
+    _spellEvent = new SpellEvent(this);
+    m_caster->m_Events.AddEventAtOffset(_spellEvent, 1ms);
+}
+
 SpellEvent::SpellEvent(Spell* spell) : BasicEvent()
 {
     m_Spell = spell;

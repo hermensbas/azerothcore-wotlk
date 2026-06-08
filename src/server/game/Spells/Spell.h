@@ -588,6 +588,9 @@ public:
     CurrentSpellTypes GetCurrentContainer() const;
 
     Unit* GetCaster() const { return m_caster; }
+    // mod-cmangosbots: register this spell's update event (SpellEvent is defined only in Spell.cpp,
+    // so a module reimplementing prepare() cannot allocate it directly).
+    void ModCBRegisterSpellEvent();
     Unit* GetOriginalCaster() const { return m_originalCaster; }
     Unit* GetOriginalTarget() const;
     SpellInfo const* GetSpellInfo() const { return m_spellInfo; }
