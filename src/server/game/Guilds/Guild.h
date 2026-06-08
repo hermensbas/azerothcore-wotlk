@@ -694,6 +694,8 @@ public:
     [[nodiscard]] bool HasRankRight(uint8 rankId, uint32 right) const { return (_GetRankRights(rankId) & right) != GR_RIGHT_EMPTY; }
     // mod-cmangosbots: public rank-count (mirrors cmangos Guild::GetRanksSize; _GetRanksSize is private).
     [[nodiscard]] uint8 GetRanksSize() const { return _GetRanksSize(); }
+    // mod-cmangosbots: public purchased-bank-tab count (mirrors cmangos Guild::GetPurchasedTabs; private in AC).
+    [[nodiscard]] uint8 GetPurchasedTabsSize() const { return _GetPurchasedTabsSize(); }
 
     bool SetName(std::string_view const& name);
 
