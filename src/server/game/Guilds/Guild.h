@@ -696,6 +696,8 @@ public:
     [[nodiscard]] uint8 GetRanksSize() const { return _GetRanksSize(); }
     // mod-cmangosbots: public purchased-bank-tab count (mirrors cmangos Guild::GetPurchasedTabs; private in AC).
     [[nodiscard]] uint8 GetPurchasedTabsSize() const { return _GetPurchasedTabsSize(); }
+    // mod-cmangosbots: public bank-tab-rights check (mirrors cmangos Guild::IsMemberHaveRights; _MemberHasTabRights is private).
+    [[nodiscard]] bool MemberHasTabRights(ObjectGuid guid, uint8 tabId, uint32 rights) const { return _MemberHasTabRights(guid, tabId, rights); }
 
     bool SetName(std::string_view const& name);
 
