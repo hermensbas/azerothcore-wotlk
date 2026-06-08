@@ -692,6 +692,8 @@ public:
     [[nodiscard]] std::string GetRankName(uint8 rankId) const { return _GetRankName(rankId); }
     // mod-cmangosbots: public rank-right check (mirrors cmangos Guild::HasRankRight; _GetRankRights is private).
     [[nodiscard]] bool HasRankRight(uint8 rankId, uint32 right) const { return (_GetRankRights(rankId) & right) != GR_RIGHT_EMPTY; }
+    // mod-cmangosbots: public rank-count (mirrors cmangos Guild::GetRanksSize; _GetRanksSize is private).
+    [[nodiscard]] uint8 GetRanksSize() const { return _GetRanksSize(); }
 
     bool SetName(std::string_view const& name);
 
