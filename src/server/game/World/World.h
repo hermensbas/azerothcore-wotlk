@@ -189,6 +189,8 @@ public:
     static bool IsStopped() { return _stopEvent; }
 
     void Update(uint32 diff) override;
+    // mod-cmangosbots: dispatch a bot-login SQLQueryHolder on the world's async processor.
+    SQLQueryHolderCallback& AddQueryHolderCallback(SQLQueryHolderCallback&& callback) override;
 
     void setRate(ServerConfigs index, float value) override;
     float getRate(ServerConfigs index) const override;
@@ -304,6 +306,8 @@ private:
 
     void ProcessQueryCallbacks();
     QueryCallbackProcessor _queryProcessor;
+    // mod-cmangosbots: async processor for bot-login SQLQueryHolders (see AddQueryHolderCallback).
+    AsyncCallbackProcessor<SQLQueryHolderCallback> _queryHolderProcessor;
 
     /**
      * @brief Executed when a World Session is being finalized. Be it from a normal login or via queue popping.

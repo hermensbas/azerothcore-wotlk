@@ -20,6 +20,7 @@
 
 #include "AsyncCallbackProcessor.h"
 #include "Common.h"
+#include "DatabaseEnvFwd.h"  // mod-cmangosbots: SQLQueryHolderCallback for AddQueryHolderCallback
 #include "Duration.h"
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
@@ -84,6 +85,9 @@ public:
     virtual void ShutdownCancel() = 0;
     virtual void ShutdownMsg(bool show = false, Player* player = nullptr, const std::string& reason = std::string()) = 0;
     virtual void Update(uint32 diff) = 0;
+    // mod-cmangosbots: lets the playerbots module dispatch a bot-login SQLQueryHolder on the world's
+    // own async processor (bots have no socket-driven session update of their own).
+    virtual SQLQueryHolderCallback& AddQueryHolderCallback(SQLQueryHolderCallback&& callback) = 0;
     virtual void setRate(ServerConfigs index, float value) = 0;
     [[nodiscard]] virtual float getRate(ServerConfigs index) const = 0;
     virtual void setBoolConfig(ServerConfigs index, bool value) = 0;

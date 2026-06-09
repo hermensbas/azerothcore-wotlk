@@ -1826,6 +1826,14 @@ void World::UpdateAreaDependentAuras()
 void World::ProcessQueryCallbacks()
 {
     _queryProcessor.ProcessReadyCallbacks();
+    // mod-cmangosbots: drive bot-login query holders queued via AddQueryHolderCallback.
+    _queryHolderProcessor.ProcessReadyCallbacks();
+}
+
+// mod-cmangosbots: queue a SQLQueryHolder (e.g. a bot character load) on the world's async processor.
+SQLQueryHolderCallback& World::AddQueryHolderCallback(SQLQueryHolderCallback&& callback)
+{
+    return _queryHolderProcessor.AddCallback(std::move(callback));
 }
 
 bool World::IsPvPRealm() const
