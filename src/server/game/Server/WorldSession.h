@@ -28,6 +28,7 @@
 #include "CircularBuffer.h"
 #include "Common.h"
 #include "DatabaseEnv.h"
+#include "QueryHolder.h"  // mod-cmangosbots: full SQLQueryHolder template, so LoginQueryHolder (below) can derive from CharacterDatabaseQueryHolder
 #include "GossipDef.h"
 #include "Packet.h"
 #include "SharedDefines.h"
