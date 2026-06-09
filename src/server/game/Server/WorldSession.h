@@ -40,7 +40,7 @@ class Creature;
 class GameObject;
 class InstanceSave;
 class Item;
-class LoginQueryHolder;
+// LoginQueryHolder is now fully declared below (mod-cmangosbots), not just forward-declared.
 class LoadPetFromDBQueryHolder;
 class Object;
 class Pet;
@@ -277,6 +277,23 @@ enum CharterTypes
     ARENA_TEAM_CHARTER_2v2_TYPE                   = 2,
     ARENA_TEAM_CHARTER_3v3_TYPE                   = 3,
     ARENA_TEAM_CHARTER_5v5_TYPE                   = 5
+};
+
+// mod-cmangosbots: moved here from CharacterHandler.cpp (was a TU-local class) so the playerbots
+// module can subclass it (PlayerbotLoginQueryHolder) for fake-session bot login. Method bodies stay
+// in CharacterHandler.cpp.
+class LoginQueryHolder : public CharacterDatabaseQueryHolder
+{
+private:
+    uint32 m_accountId;
+    ObjectGuid m_guid;
+public:
+    LoginQueryHolder(uint32 accountId, ObjectGuid guid)
+        : m_accountId(accountId), m_guid(guid) { }
+
+    ObjectGuid GetGuid() const { return m_guid; }
+    uint32 GetAccountId() const { return m_accountId; }
+    bool Initialize();
 };
 
 //class to deal with packet processing
