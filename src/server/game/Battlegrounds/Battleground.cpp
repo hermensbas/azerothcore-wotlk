@@ -1584,6 +1584,41 @@ Creature* Battleground::GetBGCreature(uint32 type)
     return creature;
 }
 
+// mod-cmangosbots: see header — bridge cmangos's by-entry BG object access to AC's type-indexed arrays.
+GameObject* Battleground::GetBGObjectByEntry(uint32 entry)
+{
+    if (!entry)
+        return nullptr;
+
+    Map* map = GetBgMap();
+    if (!map)
+        return nullptr;
+
+    for (ObjectGuid const& guid : BgObjects)
+        if (GameObject* obj = map->GetGameObject(guid))
+            if (obj->GetEntry() == entry)
+                return obj;
+
+    return nullptr;
+}
+
+Creature* Battleground::GetBGCreatureByEntry(uint32 entry)
+{
+    if (!entry)
+        return nullptr;
+
+    Map* map = GetBgMap();
+    if (!map)
+        return nullptr;
+
+    for (ObjectGuid const& guid : BgCreatures)
+        if (Creature* creature = map->GetCreature(guid))
+            if (creature->GetEntry() == entry)
+                return creature;
+
+    return nullptr;
+}
+
 void Battleground::SpawnBGObject(uint32 type, uint32 respawntime, uint32 forceRespawnDelay)
 {
     if (Map* map = FindBgMap())

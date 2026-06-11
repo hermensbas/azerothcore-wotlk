@@ -431,6 +431,12 @@ public:
     GameObject* GetBGObject(uint32 type);
     Creature* GetBGCreature(uint32 type);
 
+    // mod-cmangosbots: find a spawned BG object/creature by its template entry. cmangos BG-tactics access
+    // battleground objects by entry (GetSingleGameObjectFromStorage); AC keys BgObjects/BgCreatures by a
+    // type index, so this scans those arrays by entry to bridge the two models.
+    GameObject* GetBGObjectByEntry(uint32 entry);
+    Creature* GetBGCreatureByEntry(uint32 entry);
+
     // Location
     void SetMapId(uint32 MapID) { m_MapId = MapID; }
     [[nodiscard]] uint32 GetMapId() const { return m_MapId; }
