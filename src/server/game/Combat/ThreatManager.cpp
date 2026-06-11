@@ -677,8 +677,11 @@ ThreatReference const* ThreatManager::ReselectVictim()
 
 void ThreatManager::ProcessAIUpdates()
 {
-    CreatureAI* ai = ASSERT_NOTNULL(_owner->ToCreature())->AI();
+    // mod-cmangosbots: a non-creature threat owner (e.g. a playerbot Player) has no CreatureAI to notify,
+    // so guard the cast instead of asserting it is a creature.
+    Creature* creatureOwner = _owner->ToCreature();
     std::vector<ObjectGuid> v(std::move(_needsAIUpdate)); // _needsAIUpdate is now empty in case this triggers a recursive call
+    CreatureAI* ai = creatureOwner ? creatureOwner->AI() : nullptr;
     if (!ai)
         return;
     for (ObjectGuid const& guid : v)
