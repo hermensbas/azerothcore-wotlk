@@ -2542,14 +2542,14 @@ void Guild::_SetRankBankTabRightsAndSlots(uint8 rankId, GuildBankRightsAndSlots 
         rankInfo->SetBankTabSlotsAndRights(rightsAndSlots, saveToDB);
 }
 
-inline std::string Guild::_GetRankName(uint8 rankId) const
+/* mod-cmangosbots: external linkage so the module guild wrappers link */ std::string Guild::_GetRankName(uint8 rankId) const
 {
     if (const RankInfo* rankInfo = GetRankInfo(rankId))
         return rankInfo->GetName();
     return "<unknown>";
 }
 
-inline uint32 Guild::_GetRankRights(uint8 rankId) const
+/* mod-cmangosbots: external linkage so the module guild wrappers link */ uint32 Guild::_GetRankRights(uint8 rankId) const
 {
     if (const RankInfo* rankInfo = GetRankInfo(rankId))
         return rankInfo->GetRights();
@@ -2618,7 +2618,7 @@ inline void Guild::_UpdateMemberWithdrawSlots(CharacterDatabaseTransaction trans
     }
 }
 
-inline bool Guild::_MemberHasTabRights(ObjectGuid guid, uint8 tabId, uint32 rights) const
+/* mod-cmangosbots: external linkage so the module guild wrappers link */ bool Guild::_MemberHasTabRights(ObjectGuid guid, uint8 tabId, uint32 rights) const
 {
     if (const Member* member = GetMember(guid))
     {
