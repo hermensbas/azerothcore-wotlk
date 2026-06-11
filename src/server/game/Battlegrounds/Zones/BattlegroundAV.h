@@ -1811,6 +1811,9 @@ private:
     uint32 GetObjectThroughNode(BG_AV_Nodes node);
     bool IsTower(BG_AV_Nodes node) { return m_Nodes[node].Tower; }
 
+    // mod-cmangosbots: read-only node state for bot AV tactics (cmangos IsActiveEvent equivalent).
+    BG_AV_NodeInfo const& GetAVNodeInfo(BG_AV_Nodes node) const { return m_Nodes[node]; }
+
     uint8 GetAttackString(BG_AV_Nodes node, TeamId teamId);
     uint8 GetDefendString(BG_AV_Nodes node, TeamId teamId);
     uint8 GetMineString(uint8 mine, TeamId teamId);
