@@ -252,6 +252,10 @@ public:
     BattlegroundAB();
     ~BattlegroundAB() override;
 
+    // mod-cmangosbots: read-only node state for bot AB tactics (cmangos IsActiveEvent equivalent).
+    uint8 GetCapturePointState(uint8 node) const { return _capturePointInfo[node]._state; }
+    TeamId GetCapturePointOwner(uint8 node) const { return _capturePointInfo[node]._ownerTeamId; }
+
     void AddPlayer(Player* player) override;
     void StartingEventCloseDoors() override;
     void StartingEventOpenDoors() override;
