@@ -23,6 +23,7 @@
 #include "MMapMgr.h"
 #include "Map.h"
 #include "Metric.h"
+#include "Player.h" // mod-cmangosbots: bot-specific nav filter needs Player::GetPlayerbotAI()
 
  ////////////////// PathGenerator //////////////////
 PathGenerator::PathGenerator(WorldObject const* owner) :
@@ -648,6 +649,7 @@ void PathGenerator::CreateFilter()
 {
     uint16 includeFlags = 0;
     uint16 excludeFlags = 0;
+    bool isBot = false;
 
     if (_source->IsCreature())
     {
@@ -661,12 +663,32 @@ void PathGenerator::CreateFilter()
     }
     else // assume Player
     {
-        // perfect support not possible, just stay 'safe'
-        includeFlags |= (NAV_GROUND | NAV_WATER | NAV_MAGMA);
+        // mod-cmangosbots: a playerbot navigates with cmangos's bot filter -- include ground+water but
+        // EXCLUDE magma/slime so bots never path into lava (AC's stock player filter includes NAV_MAGMA).
+        // Mirrors cmangos PathFinder::createFilter() ENABLE_PLAYERBOTS bot branch (include GROUND|WATER,
+        // exclude MAGMA_SLIME). Gated on GetPlayerbotAI() so real players and creatures are unchanged.
+        Player const* player = _source->ToPlayer();
+        if (player && player->GetPlayerbotAI())
+        {
+            includeFlags |= (NAV_GROUND | NAV_WATER);
+            excludeFlags |= (NAV_MAGMA | NAV_SLIME);
+            isBot = true;
+        }
+        else
+        {
+            // perfect support not possible, just stay 'safe'
+            includeFlags |= (NAV_GROUND | NAV_WATER | NAV_MAGMA);
+        }
     }
 
     _filter.setIncludeFlags(includeFlags);
     _filter.setExcludeFlags(excludeFlags);
+
+    // mod-cmangosbots: bot water cost (cmangos setAreaCost(NAV_AREA_WATER, 20)). AC stores
+    // poly.area == poly.flags == NavTerrain, so NAV_WATER doubles as the water area index; a bot crosses
+    // water only when it is the cheaper route.
+    if (isBot)
+        _filter.setAreaCost(NAV_WATER, 20.0f);
 
     UpdateFilter();
 }
