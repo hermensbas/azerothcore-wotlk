@@ -28,6 +28,7 @@
 
 class Unit;
 class WorldObject;
+class Map; // mod-cmangosbots: MarkNavArea operates on a map's navmesh
 
 // 74*4.0f=296y number_of_points*interval = max_path_len
 // this is way more than actual evade range
@@ -73,6 +74,11 @@ class PathGenerator
         [[nodiscard]] bool IsSwimmableSegment(float const* v1, float const* v2, bool checkSwim = true) const;
         [[nodiscard]] bool IsSwimmableSegment(float x, float y, float z, float destX, float destY, float destZ, bool checkSwim = true) const;
         [[nodiscard]] static float GetRequiredHeightToClimb(float x, float y, float z, float destX, float destY, float destZ, float sourceHeight);
+
+        // mod-cmangosbots: mark the walkable navmesh polys within `range` of (x,y,z) on `map` with a
+        // custom Detour area (used by the playerbot system to flag mob proximity/aggro zones so the
+        // bot nav filter's setAreaCost routes bots around them). Mirrors cmangos PathFinder::setArea.
+        static void MarkNavArea(Map* map, float x, float y, float z, unsigned char area, float range);
 
         // option setters - use optional
 

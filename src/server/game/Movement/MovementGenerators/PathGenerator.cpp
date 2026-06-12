@@ -684,13 +684,63 @@ void PathGenerator::CreateFilter()
     _filter.setIncludeFlags(includeFlags);
     _filter.setExcludeFlags(excludeFlags);
 
-    // mod-cmangosbots: bot water cost (cmangos setAreaCost(NAV_AREA_WATER, 20)). AC stores
-    // poly.area == poly.flags == NavTerrain, so NAV_WATER doubles as the water area index; a bot crosses
-    // water only when it is the cheaper route.
+    // mod-cmangosbots: bot terrain costs (cmangos setAreaCost in the ENABLE_PLAYERBOTS bot branch).
+    // AC stores poly.area == poly.flags == NavTerrain, so NAV_WATER doubles as the water area index.
+    // Areas 12/13 are custom mob-zone markers applied by PathGenerator::MarkNavArea; costing them here
+    // makes bots prefer routes that skirt a mob's proximity/aggro radius (cmangos's hazard routing).
     if (isBot)
-        _filter.setAreaCost(NAV_WATER, 20.0f);
+    {
+        _filter.setAreaCost(NAV_WATER, 20.0f); // cmangos setAreaCost(9 = water, 20)
+        _filter.setAreaCost(12, 5.0f);         // cmangos setAreaCost(12 = mob proximity, 5)
+        _filter.setAreaCost(13, 20.0f);        // cmangos setAreaCost(13 = mob aggro, 20)
+    }
 
     UpdateFilter();
+}
+
+// mod-cmangosbots: cmangos PathFinder::setArea -- flag the walkable navmesh polys within `range` of a
+// position with a custom Detour area (12 = mob proximity, 13 = mob aggro). The bot nav filter assigns
+// those areas a high traversal cost (see CreateFilter), so the pathfinder routes bots around the mob's
+// danger radius. poly.area is a single byte (atomic write, no torn reads); it only ever upgrades a poly
+// (never overwrites a higher mark or a liquid-hazard area), so it converges to a stable danger map.
+// Creatures are unaffected -- their filter assigns 12/13 no cost, and the poly FLAGS are untouched.
+void PathGenerator::MarkNavArea(Map* map, float x, float y, float z, unsigned char area, float range)
+{
+    if (!map)
+        return;
+
+    dtNavMesh* navMesh = const_cast<dtNavMesh*>(map->GetMapCollisionData().GetMMapData().GetNavMesh());
+    dtNavMeshQuery const* navMeshQuery = map->GetMapCollisionData().GetMMapData().GetNavMeshQuery();
+    if (!navMesh || !navMeshQuery)
+        return;
+
+    dtQueryFilter filter;
+    filter.setIncludeFlags(NAV_GROUND | NAV_WATER);
+    filter.setExcludeFlags(NAV_MAGMA | NAV_SLIME);
+
+    float const point[VERTEX_SIZE] = { y, z, x };
+    float const extents[VERTEX_SIZE] = { 5.0f, 5.0f, 5.0f };
+    float closestPoint[VERTEX_SIZE] = { 0.0f, 0.0f, 0.0f };
+
+    dtPolyRef startRef = INVALID_POLYREF;
+    if (dtStatusFailed(navMeshQuery->findNearestPoly(point, extents, &filter, &startRef, closestPoint)) || startRef == INVALID_POLYREF)
+        return;
+
+    static int const MAX_MARK_POLYS = 2560;
+    dtPolyRef polys[MAX_MARK_POLYS];
+    dtPolyRef parents[MAX_MARK_POLYS];
+    int polyCount = 0;
+    navMeshQuery->findPolysAroundCircle(startRef, closestPoint, range, &filter, polys, parents, nullptr, &polyCount, MAX_MARK_POLYS);
+
+    for (int i = 0; i < polyCount; ++i)
+    {
+        unsigned char curArea = 0;
+        if (dtStatusSucceed(navMesh->getPolyArea(polys[i], &curArea)) &&
+            curArea != NAV_MAGMA && curArea != NAV_SLIME && curArea < area)
+        {
+            navMesh->setPolyArea(polys[i], area);
+        }
+    }
 }
 
 void PathGenerator::UpdateFilter()
