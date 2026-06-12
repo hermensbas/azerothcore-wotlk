@@ -158,8 +158,10 @@ WorldSession::WorldSession(uint32 id, std::string&& name, uint32 accountFlags, s
     }
     else if (_isBot)
     {
-        // mod-cmangosbots: socket-less bot session -- give it a recognisable remote address.
-        m_Address = "bot";
+        // mod-cmangosbots: socket-less bot session -- the bot AI detects bots vs. real players by
+        // comparing this remote address against the literal "disconnected/bot" (PlayerbotAI::IsRealPlayer),
+        // so it must match that string exactly.
+        m_Address = "disconnected/bot";
     }
 }
 
