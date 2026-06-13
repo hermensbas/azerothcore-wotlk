@@ -92,7 +92,7 @@ enum NavTerrain
     NAV_MAGMA   = 0x02,
     NAV_SLIME   = 0x04,
     NAV_WATER   = 0x08,
-    NAV_UNUSED1 = 0x10,
+    NAV_GROUND_STEEP = 0x10, // mod-cmangosbots: AC/mod-playerbots extractor (v20 mmaps) flags steep-slope polys here -- must be walkable or bots cant path on slopes
     NAV_UNUSED2 = 0x20,
     NAV_UNUSED3 = 0x40,
     NAV_UNUSED4 = 0x80

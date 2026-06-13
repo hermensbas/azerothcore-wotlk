@@ -655,7 +655,7 @@ void PathGenerator::CreateFilter()
     {
         Creature* creature = (Creature*)_source;
         if (creature->CanWalk())
-            includeFlags |= NAV_GROUND;          // walk
+            includeFlags |= (NAV_GROUND | NAV_GROUND_STEEP);          // walk
 
         // creatures don't take environmental damage
         if (creature->CanEnterWater())
@@ -670,14 +670,14 @@ void PathGenerator::CreateFilter()
         Player const* player = _source->ToPlayer();
         if (player && player->GetPlayerbotAI())
         {
-            includeFlags |= (NAV_GROUND | NAV_WATER);
+            includeFlags |= (NAV_GROUND | NAV_GROUND_STEEP | NAV_WATER);
             excludeFlags |= (NAV_MAGMA | NAV_SLIME);
             isBot = true;
         }
         else
         {
             // perfect support not possible, just stay 'safe'
-            includeFlags |= (NAV_GROUND | NAV_WATER | NAV_MAGMA);
+            includeFlags |= (NAV_GROUND | NAV_GROUND_STEEP | NAV_WATER | NAV_MAGMA);
         }
     }
 
