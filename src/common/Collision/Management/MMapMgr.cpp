@@ -85,7 +85,12 @@ namespace MMAP
             return false;
         }
 
-        if (fileHeader.mmapVersion != MMAP_VERSION)
+        // mod-cmangosbots: our custom extractor stamps mmaps as v20 (format-identical to the
+        // stock v19 -- only a lower maxSimplificationError), proven on mod-playerbots. Accept both
+        // so socket-less, server-pathfound bots get a navmesh; the stock v19 binary would reject
+        // every v20 tile, leaving bots with nothing to route on (real players are client-driven so
+        // they look fine, which is the trap). Keep in sync with the extractor MMAP_VERSION.
+        if (fileHeader.mmapVersion != MMAP_VERSION && fileHeader.mmapVersion != 20)
         {
             LOG_ERROR("maps", "MMAP:loadMap: {:03}{:02}{:02}.mmtile was built with generator v{}, expected v{}",
                            mapId, x, y, fileHeader.mmapVersion, MMAP_VERSION);
