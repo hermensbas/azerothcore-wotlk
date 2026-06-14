@@ -291,9 +291,17 @@ ObjectGuid::LowType WorldSession::GetGuidLow() const
     return GetPlayer() ? GetPlayer()->GetGUID().GetCounter() : 0;
 }
 
+// mod-cmangosbots (C4): module-registered sink for a socket-less bot's outgoing packets (default no-op).
+void(*WorldSession::_botPacketHandler)(Player*, WorldPacket const&) = nullptr;
+
 /// Send a packet to the client
 void WorldSession::SendPacket(WorldPacket const* packet)
 {
+    // mod-cmangosbots (C4): a bot has no socket, so deliver its outgoing packets to its AI before the
+    // socket check below drops them. Gated on _isBot, so real-client sessions are completely unaffected.
+    if (_isBot && _player && _botPacketHandler)
+        _botPacketHandler(_player, *packet);
+
     if (!m_Socket)
         return;
 

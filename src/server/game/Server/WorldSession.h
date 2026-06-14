@@ -482,6 +482,11 @@ public:
     std::string const& GetRemoteAddress() { return m_Address; }
     // mod-cmangosbots: true for socket-less bot sessions (see modules/mod-cmangosbots/core-patches/README.md).
     [[nodiscard]] bool IsBot() const { return _isBot; }
+    // mod-cmangosbots (C4): route a socket-less bot's OUTGOING packets to its AI. SendPacket drops
+    // packets when there is no socket, so the bot would never see SMSG_LOOT_RESPONSE / quest / item-push
+    // / spell-failure etc. The module registers this at startup; nullptr (no module) leaves SendPacket
+    // behaving exactly as before. Fires only for bot sessions, so real-client play is untouched.
+    static void SetBotPacketHandler(void(*handler)(Player*, WorldPacket const&)) { _botPacketHandler = handler; }
     void SetPlayer(Player* player);
     uint8 Expansion() const { return m_expansion; }
 
@@ -1254,6 +1259,7 @@ private:
     std::shared_ptr<WorldSocket> m_Socket;
     std::string m_Address;
     bool _isBot;                                        // mod-cmangosbots: socket-less bot session
+    static void(*_botPacketHandler)(Player*, WorldPacket const&); // mod-cmangosbots (C4): bot outgoing-packet sink
 
     AccountTypes _security;
     bool _skipQueue;
