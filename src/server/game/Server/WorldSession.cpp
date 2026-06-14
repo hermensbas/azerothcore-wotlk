@@ -297,9 +297,11 @@ void(*WorldSession::_botPacketHandler)(Player*, WorldPacket const&) = nullptr;
 /// Send a packet to the client
 void WorldSession::SendPacket(WorldPacket const* packet)
 {
-    // mod-cmangosbots (C4): a bot has no socket, so deliver its outgoing packets to its AI before the
-    // socket check below drops them. Gated on _isBot, so real-client sessions are completely unaffected.
-    if (_isBot && _player && _botPacketHandler)
+    // mod-cmangosbots (C4): deliver outgoing packets to the bot system before the socket check below
+    // drops them for socket-less bots. Fires for bot sessions (-> the bot's own AI) and for masters that
+    // run bots (-> their bots observe the master's outgoing packets). The module handler is a no-op for
+    // ordinary players with no bots, so real-client play is unaffected.
+    if (_player && _botPacketHandler && (_isBot || _player->GetPlayerbotMgr()))
         _botPacketHandler(_player, *packet);
 
     if (!m_Socket)
