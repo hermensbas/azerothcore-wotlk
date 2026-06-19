@@ -16,6 +16,7 @@
  */
 
 #include "MapBuilder.h"
+#include <cmath>
 #include <DetourCommon.h>
 #include <DetourNavMesh.h>
 #include <DetourNavMeshBuilder.h>
@@ -30,6 +31,41 @@
 
 namespace MMAP
 {
+    // mod-cmangosbots: ported from cmangos (mangos-classic contrib/mmap/src/MapBuilder.cpp). The stock
+    // rcClearUnwalkableTriangles only removes slopes steeper than walkableSlopeAngle (60deg). This second
+    // pass tags the remaining "almost unwalkable" triangles -- slopes between `steepSlopeAngle` (50deg) and
+    // that 60deg limit -- with the NAV_GROUND_STEEP area. AC stores poly.flags == poly.area, so the area set
+    // here becomes the poly's nav flag. The playerbot nav filter (PathGenerator::CreateFilter) EXCLUDES
+    // NAV_GROUND_STEEP, so bots stay off steep mountainsides (still walkable for mobs and real players).
+    // Without this pass every slope <=60deg is plain NAV_GROUND and bots path straight up mountains.
+    static void rcModAlmostUnwalkableTriangles(rcContext* ctx, float steepSlopeAngle,
+        float const* verts, int /*nv*/, int const* tris, int nt, unsigned char* areas)
+    {
+        rcIgnoreUnused(ctx);
+
+        float const walkableThr = cosf(steepSlopeAngle / 180.0f * RC_PI);
+        float norm[3];
+
+        for (int i = 0; i < nt; ++i)
+        {
+            if (areas[i] & RC_WALKABLE_AREA)
+            {
+                int const* tri = &tris[i * 3];
+
+                float e0[3], e1[3];
+                rcVsub(e0, &verts[tri[1] * 3], &verts[tri[0] * 3]);
+                rcVsub(e1, &verts[tri[2] * 3], &verts[tri[0] * 3]);
+                rcVcross(norm, e0, e1);
+                rcVnormalize(norm);
+
+                // norm[1] is cos(slope); a smaller value means a steeper face. Faces steeper than
+                // steepSlopeAngle (but already walkable, i.e. <=60deg) become NAV_GROUND_STEEP.
+                if (norm[1] <= walkableThr)
+                    areas[i] = NAV_GROUND_STEEP;
+            }
+        }
+    }
+
     TileBuilder::TileBuilder(MapBuilder* mapBuilder, bool skipLiquid, bool debugOutput) :
             m_debugOutput(debugOutput),
             m_mapBuilder(mapBuilder),
@@ -660,6 +696,9 @@ namespace MMAP
                 unsigned char* triFlags = new unsigned char[tTriCount];
                 memset(triFlags, NAV_GROUND, tTriCount * sizeof(unsigned char));
                 rcClearUnwalkableTriangles(m_rcContext, tileCfg.walkableSlopeAngle, tVerts, tVertCount, tTris, tTriCount, triFlags);
+                // mod-cmangosbots: tag 50-60deg slopes as NAV_GROUND_STEEP so the playerbot nav filter can
+                // exclude them (mirrors cmangos). Must run after clearing >60deg and before rasterizing.
+                rcModAlmostUnwalkableTriangles(m_rcContext, 50.0f, tVerts, tVertCount, tTris, tTriCount, triFlags);
                 rcRasterizeTriangles(m_rcContext, tVerts, tVertCount, tTris, triFlags, tTriCount, *tile.solid, config.walkableClimb);
                 delete[] triFlags;
 

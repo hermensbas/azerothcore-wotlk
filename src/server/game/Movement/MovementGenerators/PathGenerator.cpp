@@ -664,14 +664,16 @@ void PathGenerator::CreateFilter()
     else // assume Player
     {
         // mod-cmangosbots: a playerbot navigates with cmangos's bot filter -- include ground+water but
-        // EXCLUDE magma/slime so bots never path into lava (AC's stock player filter includes NAV_MAGMA).
-        // Mirrors cmangos PathFinder::createFilter() ENABLE_PLAYERBOTS bot branch (include GROUND|WATER,
-        // exclude MAGMA_SLIME). Gated on GetPlayerbotAI() so real players and creatures are unchanged.
+        // EXCLUDE magma/slime (never path into lava) AND NAV_GROUND_STEEP (the 50-60deg slopes the mmaps
+        // extractor tags via rcModAlmostUnwalkableTriangles) so bots keep off steep mountainsides and follow
+        // gentle ground/roads. Mirrors cmangos PathFinder::createFilter() ENABLE_PLAYERBOTS bot branch
+        // (include GROUND|WATER, exclude MAGMA_SLIME|GROUND_STEEP). Gated on GetPlayerbotAI() so real players
+        // and creatures are unchanged (they still include NAV_GROUND_STEEP and may walk steep slopes).
         Player const* player = _source->ToPlayer();
         if (player && player->GetPlayerbotAI())
         {
-            includeFlags |= (NAV_GROUND | NAV_GROUND_STEEP | NAV_WATER);
-            excludeFlags |= (NAV_MAGMA | NAV_SLIME);
+            includeFlags |= (NAV_GROUND | NAV_WATER);
+            excludeFlags |= (NAV_MAGMA | NAV_SLIME | NAV_GROUND_STEEP);
             isBot = true;
         }
         else
