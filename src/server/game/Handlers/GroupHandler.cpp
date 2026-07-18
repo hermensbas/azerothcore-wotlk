@@ -992,7 +992,7 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket& recvData)
     ObjectGuid Guid;
     recvData >> Guid;
 
-    Player* player = HashMapHolder<Player>::Find(Guid);
+    Player* player = ObjectAccessor::FindConnectedPlayer(Guid);
     if (!player || !player->IsInSameRaidWith(_player))
     {
         WorldPacket data(SMSG_PARTY_MEMBER_STATS_FULL, 3 + 4 + 2);

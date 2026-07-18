@@ -303,7 +303,7 @@ void Map::ScriptsProcess()
                     source = GetPet(step.sourceGUID);
                     break;
                 case HighGuid::Player:
-                    source = HashMapHolder<Player>::Find(step.sourceGUID);
+                    source = ObjectAccessor::FindConnectedPlayer(step.sourceGUID);
                     break;
                 case HighGuid::Transport:
                 case HighGuid::GameObject:
@@ -335,7 +335,7 @@ void Map::ScriptsProcess()
                     target = GetPet(step.targetGUID);
                     break;
                 case HighGuid::Player:                       // empty GUID case also
-                    target = HashMapHolder<Player>::Find(step.targetGUID);
+                    target = ObjectAccessor::FindConnectedPlayer(step.targetGUID);
                     break;
                 case HighGuid::Transport:
                 case HighGuid::GameObject:

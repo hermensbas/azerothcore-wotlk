@@ -28,6 +28,7 @@
 #include "Pet.h"
 #include "Player.h"
 #include "Transport.h"
+#include <functional>
 
 template<class T>
 void HashMapHolder<T>::Insert(T* o)
@@ -72,13 +73,75 @@ std::shared_mutex* HashMapHolder<T>::GetLock()
     return &_lock;
 }
 
-HashMapHolder<Player>::MapType const& ObjectAccessor::GetPlayers()
+void ObjectAccessor::ForEachPlayer(std::function<void(Player*)> func)
 {
-    return HashMapHolder<Player>::GetContainer();
+    ConcurrentHashMapHolder<Player>::ForEach(std::move(func));
 }
 
-template class HashMapHolder<Player>;
-template class HashMapHolder<MotionTransport>;
+std::vector<Player*> ObjectAccessor::GetPlayersSnapshot()
+{
+    return ConcurrentHashMapHolder<Player>::GetSnapshot();
+}
+
+// ConcurrentHashMapHolder implementations
+
+template<class T>
+void ConcurrentHashMapHolder<T>::Insert(T* o)
+{
+    static_assert(std::is_same<Player, T>::value
+        || std::is_same<MotionTransport, T>::value,
+        "Only Player and MotionTransport can be registered in ConcurrentHashMapHolder");
+
+    GetContainer().Insert(o->GetGUID(), o);
+}
+
+template<class T>
+void ConcurrentHashMapHolder<T>::Remove(T* o)
+{
+    GetContainer().Remove(o->GetGUID());
+}
+
+template<class T>
+T* ConcurrentHashMapHolder<T>::Find(ObjectGuid guid)
+{
+    return GetContainer().Find(guid);
+}
+
+template<class T>
+template<typename Func>
+void ConcurrentHashMapHolder<T>::ForEach(Func&& func)
+{
+    GetContainer().ForEach([&func](ObjectGuid const& /*guid*/, T* obj) {
+        func(obj);
+    });
+}
+
+template<class T>
+std::vector<T*> ConcurrentHashMapHolder<T>::GetSnapshot()
+{
+    return GetContainer().GetSnapshot();
+}
+
+template<class T>
+std::size_t ConcurrentHashMapHolder<T>::Size()
+{
+    return GetContainer().Size();
+}
+
+template<class T>
+auto ConcurrentHashMapHolder<T>::GetContainer() -> MapType&
+{
+    static MapType _objectMap;
+    return _objectMap;
+}
+
+// Explicit template instantiations for ConcurrentHashMapHolder
+template class ConcurrentHashMapHolder<Player>;
+template class ConcurrentHashMapHolder<MotionTransport>;
+
+// ForEach explicit instantiations for common function types
+template void ConcurrentHashMapHolder<Player>::ForEach(std::function<void(Player*)>&&);
+template void ConcurrentHashMapHolder<MotionTransport>::ForEach(std::function<void(MotionTransport*)>&&);
 
 namespace PlayerNameMapHolder
 {
@@ -219,7 +282,7 @@ Pet* ObjectAccessor::GetPet(WorldObject const& u, ObjectGuid const& guid)
 
 Player* ObjectAccessor::GetPlayer(Map const* m, ObjectGuid const& guid)
 {
-    if (Player * player = HashMapHolder<Player>::Find(guid))
+    if (Player* player = ConcurrentHashMapHolder<Player>::Find(guid))
         if (player->IsInWorld() && player->GetMap() == m)
             return player;
 
@@ -244,7 +307,7 @@ Creature* ObjectAccessor::GetCreatureOrPetOrVehicle(WorldObject const& u, Object
 
 Player* ObjectAccessor::FindPlayer(ObjectGuid const guid)
 {
-    Player* player = HashMapHolder<Player>::Find(guid);
+    Player* player = ConcurrentHashMapHolder<Player>::Find(guid);
     return player && player->IsInWorld() ? player : nullptr;
 }
 
@@ -256,16 +319,14 @@ Player* ObjectAccessor::FindPlayerByLowGUID(ObjectGuid::LowType lowguid)
 
 Player* ObjectAccessor::FindConnectedPlayer(ObjectGuid const guid)
 {
-    return HashMapHolder<Player>::Find(guid);
+    return ConcurrentHashMapHolder<Player>::Find(guid);
 }
 
 void ObjectAccessor::SaveAllPlayers()
 {
-    std::shared_lock<std::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
-
-    HashMapHolder<Player>::MapType const& m = GetPlayers();
-    for (HashMapHolder<Player>::MapType::const_iterator itr = m.begin(); itr != m.end(); ++itr)
-        itr->second->SaveToDB(false, false);
+    ConcurrentHashMapHolder<Player>::ForEach([](Player* player) {
+        player->SaveToDB(false, false);
+    });
 }
 
 Player* ObjectAccessor::FindPlayerByName(std::string const& name, bool checkInWorld)
@@ -332,15 +393,27 @@ GameObject* ObjectAccessor::GetSpawnedGameObjectByDBGUID(uint32 mapId, uint64 gu
 template<>
 void ObjectAccessor::AddObject(Player* player)
 {
-    HashMapHolder<Player>::Insert(player);
+    ConcurrentHashMapHolder<Player>::Insert(player);
     PlayerNameMapHolder::Insert(player);
 }
 
 template<>
 void ObjectAccessor::RemoveObject(Player* player)
 {
-    HashMapHolder<Player>::Remove(player);
+    ConcurrentHashMapHolder<Player>::Remove(player);
     PlayerNameMapHolder::Remove(player);
+}
+
+template<>
+void ObjectAccessor::AddObject(MotionTransport* transport)
+{
+    ConcurrentHashMapHolder<MotionTransport>::Insert(transport);
+}
+
+template<>
+void ObjectAccessor::RemoveObject(MotionTransport* transport)
+{
+    ConcurrentHashMapHolder<MotionTransport>::Remove(transport);
 }
 
 void ObjectAccessor::UpdatePlayerNameMapReference(std::string oldname, Player* player)

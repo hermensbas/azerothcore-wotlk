@@ -420,17 +420,10 @@ void WorldSessionMgr::SendServerMessage(ServerMessageType messageID, std::string
 
 void WorldSessionMgr::DoForAllOnlinePlayers(std::function<void(Player*)> exec)
 {
-    std::shared_lock lock(*HashMapHolder<Player>::GetLock());
-    for (auto const& it : ObjectAccessor::GetPlayers())
-    {
-        if (Player* player = it.second)
+    ObjectAccessor::ForEachPlayer([&exec](Player* player) {
+        if (player->IsInWorld())
         {
-            if (!player->IsInWorld())
-            {
-                continue;
-            }
-
             exec(player);
         }
-    }
+    });
 }

@@ -34,7 +34,7 @@ void WhoListCacheMgr::Update()
     _whoListStorage.clear();
     _whoListStorage.reserve(sWorldSessionMgr->GetPlayerCount() + 1);
 
-    for (auto const& [guid, player] : ObjectAccessor::GetPlayers())
+    for (Player* player : ObjectAccessor::GetPlayersSnapshot())
     {
         if (!player->FindMap() || player->GetSession()->PlayerLoading())
             continue;

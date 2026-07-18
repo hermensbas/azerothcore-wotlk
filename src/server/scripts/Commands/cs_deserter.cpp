@@ -376,11 +376,8 @@ public:
             }
         }
 
-        std::shared_lock<std::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
-        HashMapHolder<Player>::MapType const& onlinePlayerList = ObjectAccessor::GetPlayers();
-        for (HashMapHolder<Player>::MapType::const_iterator itr = onlinePlayerList.begin(); itr != onlinePlayerList.end(); ++itr)
+        for (Player* player : ObjectAccessor::GetPlayersSnapshot())
         {
-            Player* player = itr->second;
             Aura* aura = player->GetAura(deserterSpell);
             if (aura && (remainTime < 0 || aura->GetDuration() <= remainTime * IN_MILLISECONDS))
             {

@@ -412,7 +412,7 @@ MotionTransport* TransportMgr::CreateTransport(uint32 entry, ObjectGuid::LowType
     if (map && map->IsDungeon())
         trans->m_zoneScript = map->ToInstanceMap()->GetInstanceScript();
 
-    HashMapHolder<MotionTransport>::Insert(trans);
+    ObjectAccessor::AddObject(trans);
     trans->GetMap()->AddToMap<Transport>(trans);
     return trans;
 }

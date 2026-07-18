@@ -20,6 +20,7 @@
 
 #include "Define.h"
 #include "PCQueue.h"
+#include "WorkStealingPool.h"
 #include <condition_variable>
 #include <thread>
 #include <atomic>
@@ -27,6 +28,16 @@
 class Map;
 class UpdateRequest;
 
+/**
+ * @brief Map update scheduler with optional work-stealing
+ *
+ * Supports two modes:
+ * 1. Legacy mode (default): Uses ProducerConsumerQueue with dedicated threads
+ * 2. Work-stealing mode: Uses WorkStealingPool for better load balancing
+ *
+ * Work-stealing mode is enabled via activate_work_stealing() and provides
+ * better performance when maps have varying update costs.
+ */
 class MapUpdater
 {
 public:
@@ -38,18 +49,35 @@ public:
     void schedule_map_preload(uint32 mapid);
     void schedule_lfg_update(uint32 diff);
     void wait();
+
+    /// Activate legacy mode with dedicated worker threads
     void activate(std::size_t num_threads);
+
+    /// Activate work-stealing mode (recommended for better load balancing)
+    void activate_work_stealing(std::size_t num_threads);
+
     void deactivate();
     bool activated();
     void update_finished();
 
+    /// Check if using work-stealing mode
+    [[nodiscard]] bool IsWorkStealingMode() const { return _useWorkStealing; }
+
 private:
     void WorkerThread();
+
+    // Legacy mode members
     ProducerConsumerQueue<UpdateRequest*> _queue;
-    std::atomic<int> pending_requests;  // Use std::atomic for pending_requests to avoid lock contention
-    std::atomic<bool> _cancelationToken;  // Atomic flag for cancellation to avoid race conditions
     std::vector<std::thread> _workerThreads;
-    std::mutex _lock; // Mutex and condition variable for synchronization
+
+    // Work-stealing mode
+    std::unique_ptr<WorkStealingPool> _workStealingPool;
+    bool _useWorkStealing{false};
+
+    // Shared state
+    std::atomic<int> pending_requests{0};
+    std::atomic<bool> _cancelationToken{false};
+    std::mutex _lock;
     std::condition_variable _condition;
 };
 

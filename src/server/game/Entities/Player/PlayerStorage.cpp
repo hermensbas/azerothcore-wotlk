@@ -5237,7 +5237,7 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
         if (transLowGUID > 0)
         {
             ObjectGuid transGUID = ObjectGuid::Create<HighGuid::Mo_Transport>(transLowGUID);
-            transGO = HashMapHolder<MotionTransport>::Find(transGUID);
+            transGO = ConcurrentHashMapHolder<MotionTransport>::Find(transGUID);
         }
         else
         {
@@ -6839,7 +6839,7 @@ bool Player::Satisfy(DungeonProgressionRequirements const* ar, uint32 target_map
         std::string leaderName = m_session->GetAcoreString(LANG_YOU);
         {
             ObjectGuid leaderGuid = GetGroup() ? GetGroup()->GetLeaderGUID() : GetGUID();
-            Player* tempLeader = HashMapHolder<Player>::Find(leaderGuid);
+            Player* tempLeader = ObjectAccessor::FindConnectedPlayer(leaderGuid);
             if (leaderGuid != GetGUID())
             {
                 if (tempLeader != nullptr)

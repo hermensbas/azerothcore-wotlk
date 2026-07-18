@@ -1347,6 +1347,16 @@ MapUpdateInterval = 10
 MapUpdate.Threads = 1
 
 #
+#    MapUpdate.WorkStealing
+#        Description: Enable work-stealing mode for map updates.
+#                     Work-stealing provides better load balancing when maps have
+#                     varying update costs (recommended for multi-core systems).
+#        Default:     0 - (Disabled, uses legacy ProducerConsumerQueue)
+#                     1 - (Enabled, uses WorkStealingPool)
+
+MapUpdate.WorkStealing = 0
+
+#
 #    MoveMaps.Enable
 #        Description: Enable/Disable pathfinding using mmaps - recommended.
 #        Default:     0 - (Disabled)

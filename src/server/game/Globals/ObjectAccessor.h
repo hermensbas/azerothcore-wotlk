@@ -21,7 +21,10 @@
 #include "Define.h"
 #include "GridDefines.h"
 #include "Object.h"
+#include "ConcurrentHashMap.h"
+#include <functional>
 #include <shared_mutex>
+#include <vector>
 
 class Creature;
 class Corpse;
@@ -36,6 +39,10 @@ class Transport;
 class StaticTransport;
 class MotionTransport;
 
+/**
+ * @brief Legacy HashMapHolder - kept for backward compatibility
+ * @deprecated Use ConcurrentHashMapHolder for new code
+ */
 template <class T>
 class HashMapHolder
 {
@@ -55,6 +62,38 @@ public:
     static MapType& GetContainer();
 
     static std::shared_mutex* GetLock();
+};
+
+/**
+ * @brief High-performance concurrent holder using sharded locking
+ *
+ * Provides ~64x reduced lock contention compared to HashMapHolder.
+ * Use ForEach() instead of GetContainer() for iteration.
+ */
+template <class T>
+class ConcurrentHashMapHolder
+{
+    ConcurrentHashMapHolder() = default;
+
+public:
+    using MapType = ConcurrentHashMap<ObjectGuid, T*, 64>;
+
+    static void Insert(T* o);
+    static void Remove(T* o);
+    static T* Find(ObjectGuid guid);
+
+    /// Iterate all entries with a callback (thread-safe, shard-by-shard)
+    template<typename Func>
+    static void ForEach(Func&& func);
+
+    /// Get a snapshot of all values (thread-safe copy)
+    static std::vector<T*> GetSnapshot();
+
+    /// Get approximate count
+    static std::size_t Size();
+
+private:
+    static MapType& GetContainer();
 };
 
 namespace ObjectAccessor
@@ -82,8 +121,11 @@ namespace ObjectAccessor
     Creature* GetSpawnedCreatureByDBGUID(uint32 mapId, uint64 guid);
     GameObject* GetSpawnedGameObjectByDBGUID(uint32 mapId, uint64 guid);
 
-    // when using this, you must use the hashmapholder's lock
-    HashMapHolder<Player>::MapType const& GetPlayers();
+    /// Thread-safe iteration over all players using ConcurrentHashMapHolder
+    void ForEachPlayer(std::function<void(Player*)> func);
+
+    /// Get a thread-safe snapshot of all players
+    std::vector<Player*> GetPlayersSnapshot();
 
     template<class T>
     void AddObject(T* object)
@@ -104,6 +146,12 @@ namespace ObjectAccessor
 
     template<>
     void RemoveObject(Player* player);
+
+    template<>
+    void AddObject(MotionTransport* transport);
+
+    template<>
+    void RemoveObject(MotionTransport* transport);
 
     void UpdatePlayerNameMapReference(std::string oldname, Player* player);
 }

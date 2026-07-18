@@ -55,10 +55,16 @@ MapMgr* MapMgr::instance()
 void MapMgr::Initialize()
 {
     int num_threads(sWorld->getIntConfig(CONFIG_NUMTHREADS));
+    bool useWorkStealing = sWorld->getBoolConfig(CONFIG_MAP_UPDATE_WORK_STEALING);
 
     // Start mtmaps if needed
     if (num_threads > 0)
-        m_updater.activate(num_threads);
+    {
+        if (useWorkStealing)
+            m_updater.activate_work_stealing(num_threads);
+        else
+            m_updater.activate(num_threads);
+    }
 }
 
 void MapMgr::InitializeVisibilityDistanceInfo()

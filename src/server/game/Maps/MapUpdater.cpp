@@ -90,52 +90,93 @@ private:
     uint32 m_diff;
 };
 
-MapUpdater::MapUpdater() : pending_requests(0), _cancelationToken(false)
-{
-}
+MapUpdater::MapUpdater() = default;
 
 void MapUpdater::activate(std::size_t num_threads)
 {
+    if (num_threads == 0)
+        return;
+
+    _useWorkStealing = false;
     _workerThreads.reserve(num_threads);
     for (std::size_t i = 0; i < num_threads; ++i)
-    {
         _workerThreads.push_back(std::thread(&MapUpdater::WorkerThread, this));
-    }
+
+    LOG_INFO("server.loading", ">> MapUpdater activated with {} legacy worker threads", num_threads);
+}
+
+void MapUpdater::activate_work_stealing(std::size_t num_threads)
+{
+    if (num_threads == 0)
+        return;
+
+    _useWorkStealing = true;
+    _workStealingPool = std::make_unique<WorkStealingPool>(num_threads);
+    _workStealingPool->Activate();
+
+    LOG_INFO("server.loading", ">> MapUpdater activated with {} work-stealing threads", num_threads);
 }
 
 void MapUpdater::deactivate()
 {
     _cancelationToken = true;
 
-    wait();  // This is where we wait for tasks to complete
+    wait();
 
-    _queue.Cancel();  // Cancel the queue to prevent further task processing
-
-    // Join all worker threads
-    for (auto& thread : _workerThreads)
+    if (_useWorkStealing)
     {
-        if (thread.joinable())
+        if (_workStealingPool)
         {
-            thread.join();
+            _workStealingPool->Deactivate();
+            _workStealingPool.reset();
         }
     }
+    else
+    {
+        _queue.Cancel();
+
+        for (auto& thread : _workerThreads)
+        {
+            if (thread.joinable())
+                thread.join();
+        }
+        _workerThreads.clear();
+    }
+
+    _useWorkStealing = false;
 }
 
 void MapUpdater::wait()
 {
-    std::unique_lock<std::mutex> guard(_lock);  // Guard lock for safe waiting
-
-    // Wait until there are no pending requests
-    _condition.wait(guard, [this] {
-        return pending_requests.load(std::memory_order_acquire) == 0;
-    });
+    if (_useWorkStealing)
+    {
+        if (_workStealingPool)
+            _workStealingPool->WaitForAll();
+    }
+    else
+    {
+        std::unique_lock<std::mutex> guard(_lock);
+        _condition.wait(guard, [this] {
+            return pending_requests.load(std::memory_order_acquire) == 0;
+        });
+    }
 }
 
 void MapUpdater::schedule_task(UpdateRequest* request)
 {
-    // Atomic increment for pending_requests
-    pending_requests.fetch_add(1, std::memory_order_release);
-    _queue.Push(request);
+    if (_useWorkStealing)
+    {
+        pending_requests.fetch_add(1, std::memory_order_release);
+        _workStealingPool->Submit([this, request]() {
+            request->call();
+            delete request;
+        });
+    }
+    else
+    {
+        pending_requests.fetch_add(1, std::memory_order_release);
+        _queue.Push(request);
+    }
 }
 
 void MapUpdater::schedule_update(Map& map, uint32 diff, uint32 s_diff)
@@ -155,17 +196,24 @@ void MapUpdater::schedule_lfg_update(uint32 diff)
 
 bool MapUpdater::activated()
 {
-    return !_workerThreads.empty();
+    return _useWorkStealing ? (_workStealingPool && _workStealingPool->IsActive())
+                            : !_workerThreads.empty();
 }
 
 void MapUpdater::update_finished()
 {
-    // Atomic decrement for pending_requests
-    if (pending_requests.fetch_sub(1, std::memory_order_acquire) == 1)
+    if (_useWorkStealing)
     {
-        // Only notify when pending_requests becomes 0 (i.e., all tasks are finished)
-        std::lock_guard<std::mutex> lock(_lock);  // Lock only for condition variable notification
-        _condition.notify_all();  // Notify waiting threads that all requests are complete
+        // Work-stealing pool handles completion tracking internally
+        pending_requests.fetch_sub(1, std::memory_order_acquire);
+    }
+    else
+    {
+        if (pending_requests.fetch_sub(1, std::memory_order_acquire) == 1)
+        {
+            std::lock_guard<std::mutex> lock(_lock);
+            _condition.notify_all();
+        }
     }
 }
 
@@ -179,12 +227,12 @@ void MapUpdater::WorkerThread()
     {
         UpdateRequest* request = nullptr;
 
-        _queue.WaitAndPop(request);  // Wait for and pop a request from the queue
+        _queue.WaitAndPop(request);
 
         if (!_cancelationToken && request)
         {
-            request->call();  // Execute the request
-            delete request;  // Clean up after processing
+            request->call();
+            delete request;
         }
     }
 }
